@@ -8,6 +8,7 @@ export default function HomeComponent() {
   const navigate = useNavigate();
   const [demo,setDemo] = useState(false);
   const [channels, setChannels] = useState([]);
+  const [newChannelName, setNewChannelName] = useState("");
   const [user] = useState(() => localStorage.getItem("user_name") || "");
   const [selectedChannel, setSelectedChannel] = useState("");
   const [socket] = useState(() => io('http://localhost:8083'));
@@ -21,7 +22,11 @@ export default function HomeComponent() {
       socket.connect(); 
 
       socket.on('channels', (data) => {
-        setChannels(data);
+        setChannels((prev) => {
+          let arr = [...prev, ...data];
+          let newSet = new Set(arr);
+          arr = Array.from(newSet);
+          return arr;});
       });
 
       return () => {
@@ -35,7 +40,7 @@ export default function HomeComponent() {
     setDemo(true);
   }
 
-  const renderChannels = (channels) => {
+  const renderChannels = () => {
     return channels.map((channel,key) => {
       return (
         <option value={channel} key={key}>{channel}</option>
@@ -52,23 +57,37 @@ export default function HomeComponent() {
     setSelectedChannel(channel);
   }
 
+  const addNewChannel = ()=>{
+    socket.emit('add-channel', {channel: newChannelName, message: newChannelName});
+    setDemo(true);
+  }
+
   return (
     <div className='home container-fluid'>
       <HeaderComponent />
 
       <div className='row body'>
-        <div className='col-12'>
-          <h1>Home</h1>
-          <button className='btn btn-primary' onClick={getChannels}>Get Channels</button>
-          <br/>
-          <br/>
+      <div className='col-12'>
           <div>&nbsp;</div>
+          <p>Add New Channel</p>
+          <input type='text' placeholder='Channel Name' className='form-control' onChange={(e) => setNewChannelName(e.target.value)}/>
+          <div>&nbsp;</div>
+          <button className='btn btn-primary' onClick={addNewChannel}>Add</button>
+          <div>&nbsp;</div>
+        </div>
+        <div className='col-12'>
+          <button className='btn btn-primary' onClick={getChannels}>Get Channels</button>
+          <div>&nbsp;</div>
+          {channels.length > 0 ?
           <select name='channles' multiple onChange={(e) => updateSelectedChannel(e.target.value)}>
-          {channels.length > 0 && renderChannels(channels)}
+          {renderChannels()}
           </select>
-          <br/>
+          :null
+          }
+          <div>&nbsp;</div>
           <button className='btn btn-primary' onClick={join_channel}>Join</button>
         </div>
+       
       </div>
 
       <FooterComponent />

@@ -44,13 +44,19 @@ io.on('connection', (socket) => {
         publisher.publish(data.channel, data.message); // Publish to the Redis channel
     });
 
+    // add new channel
+    socket.on('add-channel', async(data) => {
+        await publisher.publish(data.channel,  data.message); // Publish to the Redis channel
+        socket.emit('channels', [data.channel]); // Emit the message to the client
+    });
+
     // get channels
     socket.on('get-channels', async() => {
         try {
-            console.log("Get-Channels Called");
-            // Get active channels using PUBSUB CHANNELS command
+            // Fetch the list of channels
+            await subscriber.subscribe('channels');
             const channels = await subscriber.sendCommand(['PUBSUB', 'CHANNELS']);
-            console.log(`Active Channels: ${JSON.stringify(channels)}`);
+            console.log("channelsX",channels);
             socket.emit('channels', channels);
         } catch (err) {
             console.error('Error fetching channels:', err);
